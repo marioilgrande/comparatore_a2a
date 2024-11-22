@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calcolatore Tariffe Luce e Gas A2A</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            margin: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        input[type="number"], select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #007BFF;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e9ffe9;
+            border: 1px solid #c1e1c1;
+            border-radius: 8px;
+        }
+        .offerta {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        .offerta.risparmio {
+            background-color: #d4edda; /* Verde chiaro */
+            border-color: #c3e6cb;
+        }
+        .offerta.costo {
+            background-color: #f8d7da; /* Rosso chiaro */
+            border-color: #f5c6cb;
+        }
+        .instructions {
+            background-color: #f1f1f1;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 10px;
+            line-height: 1.5;
+        }
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+                font-size: 12px;
+            }
+            .container, .form-group, .instructions, button {
+                display: none;
+            }
+            .printable-area {
+                margin: 0;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Calcolatore Tariffe Luce e Gas A2A</h1>
+    <div class="container">
+        <!-- Sezione istruzioni -->
+        <div class="container">
+        <!-- Sezione Istruzioni -->
+        <div class="instructions">
+            <h2>Istruzioni per l'uso</h2>
+            <ol>
+                <li>Inserisci il nome e cognome del cliente.</li>
+                <li>Seleziona il mese di riferimento dal menu a tendina.</li>
+                <li>Inserisci il consumo in kWh per la luce e, se necessario, in mc per il gas.</li>
+                <li>Inserisci i costi totali che stai attualmente pagando per la luce e/o il gas.</li>
+                <li>Clicca sul pulsante <strong>Calcola</strong> per visualizzare il confronto.</li>
+                <li>Puoi stampare i risultati cliccando su <strong>Stampa Offerta</strong>.</li>
+            </ol>
+        </div>
+
+         <form id="calcolatore">
+            <div class="form-group">
+                <label for="nomeCliente">Nome e Cognome del Cliente:</label>
+                <input type="text" id="nomeCliente" placeholder="Inserisci Nome e Cognome" required>
+            </div>
+            <div class="form-group">
+                <label for="mese">Seleziona il mese di riferimento:</label>
+                <select id="mese">
+                    <option value="aprile">Aprile</option>
+                    <option value="maggio">Maggio</option>
+                    <option value="giugno">Giugno</option>
+                    <option value="luglio">Luglio</option>
+                    <option value="agosto">Agosto</option>
+                    <option value="settembre">Settembre</option>
+                    <option value="ottobre">Ottobre</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="consumoLuce">Consumo Luce (kWh):</label>
+                <input type="number" id="consumoLuce" placeholder="Inserisci il consumo in kWh" required>
+            </div>
+            <div class="form-group">
+                <label for="consumoGas">Consumo Gas (mc):</label>
+                <input type="number" id="consumoGas" placeholder="Inserisci il consumo in mc" required>
+            </div>
+            <div class="form-group">
+                <label for="costoAttualeLuce">Costo attuale spesa energia (€):</label>
+                <input type="number" id="costoAttualeLuce" placeholder="Inserisci il costo attuale totale luce" step="0.01" required>
+            </div>
+            <div class="form-group">
+                <label for="costoAttualeGas">Costo attuale materia Gas (€):</label>
+                <input type="number" id="costoAttualeGas" placeholder="Inserisci il costo attuale totale gas" step="0.01" required>
+            </div>
+            <button type="button" onclick="calcolaCosto()">Calcola</button>
+        </form>
+        </form>
+        <div id="results" class="results" style="display: none;">
+            <h2>Risultati:</h2>
+            <div id="risultatiOfferte"></div>
+        </div>
+    </div>
+
+    <script>
+        const offertePerMese = {
+            aprile: {
+                "SMART CASA LUCE": { pun: 0.087, spreadLuce: 0.029, spreadGas: 0, arrotondamento: 0.012, costoFisso: 9.50, },
+                "SMART CASA GAS": { psv: 0.323, spreadLuce: 0, spreadGas: 0.13, arrotondamento: 0.012, costoFisso: 9.50, },
+                "NOI2 (70% fisso 0,119 €/kWh, 30% variabile PUN+SPREAD)": { pun: 0.087, spreadLuce: 0.028, prezzoFisso: 0.119, costoFisso: 9.50 },
+                "SMART CASA LUCE+": { pun: 0.087, spreadLuce: 0.028, spreadGas: 0, arrotondamento: 0.012, costoFisso: 12.00, },
+                "SMART CASA GAS+": { psv: 0.323, spreadLuce: 0, spreadGas: 0.14, arrotondamento: 0.012, costoFisso: 12.00, },
+                "SMART BUSINESS LUCE": { pun: 0.087, spreadLuce: 0.029, spreadGas: 0, arrotondamento: 0.012, costoFisso: 14.50, },
+                "SMART BUSINESS GAS": { psv: 0.323, spreadLuce: 0, spreadGas: 0.12, arrotondamento: 0.012, costoFisso: 14.50, },
+                "SMART BUSINESS LUCE+": { pun: 0.087, spreadLuce: 0.029, spreadGas: 0, arrotondamento: 0.012, costoFisso: 20.00, },
+                "SMART BUSINESS GAS+": { psv: 0.323, spreadLuce: 0, spreadGas: 0.12, arrotondamento: 0.012, costoFisso: 20.00, }
+            },
+            maggio: {
+                "SMART CASA LUCE": { pun: 0.095, spreadLuce: 0.029, spreadGas: 0, arrotondamento: 0.012, costoFisso: 9.50, },
+                "SMART CASA GAS": { psv: 0.35, spreadLuce: 0, spreadGas: 0.13, arrotondamento: 0.012, costoFisso: 9.50, },
+                "NOI2 (70% fisso 0,119 €/kWh, 30% variabile PUN+SPREAD)": { pun: 0.095, spreadLuce: 0.028, prezzoFisso: 0.119, costoFisso: 9.50 },
+                "SMART CASA LUCE+": { pun: 0.095, spreadLuce: 0.028, spreadGas: 0, arrotondamento: 0.012, costoFisso: 12.00, },
+                "SMART CASA GAS+": { psv: 0.35, spreadLuce: 0, spreadGas: 0.14, arrotondamento: 0.012, costoFisso: 12.00, },
+                "SMART BUSINESS LUCE": { pun: 0.095, spreadLuce: 0.029, spreadGas: 0, arrotondamento: 0.012, costoFisso: 14.50, },
+                "SMART BUSINESS GAS": { psv: 0.35, spreadLuce: 0, spreadGas: 0.12, arrotondamento: 0.012, costoFisso: 14.50, },
+                "SMART BUSINESS LUCE+": { pun: 0.095, spreadLuce: 0.029, spreadGas: 0, arrotondamento: 0.012, costoFisso: 20.00, },
+                "SMART BUSINESS GAS+": { psv: 0.35, spreadLuce: 0, spreadGas: 0.12, arrotondamento: 0.012, costoFisso: 20.00, }
+            },
+            giugno: {
+                "SMART CASA LUCE": { pun: 0.103, spreadLuce: 0.029, spreadGas: 0, arrotondamento: 0.012, costoFisso: 9.50, },
+                "SMART CASA GAS": { psv: 0.382, spreadLuce: 0, spreadGas: 0.13, arrotondamento: 0.012, costoFisso: 9.50, },
+                "NOI2 (70% fisso 0,119 €/kWh, 30% variabile PUN+SPREAD)": { pun: 0.103, spreadLuce: 0.028, prezzoFisso: 0.119, costoFisso: 9.50 },
+                "SMART CASA LUCE+": { pun: 0.103, spreadLuce: 0.028, spreadGas: 0, arrotondamento: 0.012, costoFisso: 12.00, },
+                "SMART CASA GAS+": { psv: 0.382, spreadLuce: 0, spreadGas: 0.14, arrotondamento: 0.012, costoFisso: 12.00, },
+                "SMART BUSINESS LUCE": { pun: 0.103, spreadLuce: 0.029, spreadGas: 0, arrotondamento: 0.012, costoFisso: 14.50, },
+                "SMART BUSINESS GAS": { psv: 0.382, spreadLuce: 0, spreadGas: 0.12, arrotondamento: 0.012, costoFisso: 14.50, },
+                "SMART BUSINESS LUCE+": { pun: 0.103, spreadLuce: 0.029, spreadGas: 0, arrotondamento: 0.012, costoFisso: 20.00, },
+                "SMART BUSINESS GAS+": { psv: 0.382, spreadLuce: 0, spreadGas: 0.12, arrotondamento: 0.012, costoFisso: 20.00, }
+            },
+            luglio: {
+                "SMART CASA LUCE": { pun: 0.112, spreadLuce: 0.029, spreadGas: 0, arrotondamento: 0.012, costoFisso: 9.50, },
+                "SMART CASA GAS": { psv: 0.375, spreadLuce: 0, spreadGas: 0.13, arrotondamento: 0.012, costoFisso: 9.50, },
+                "NOI2 (70% fisso 0,119 €/kWh, 30% variabile PUN+SPREAD)": { pun: 0.112, spreadLuce: 0.028, prezzoFisso: 0.119, costoFisso: 9.50 },
+                "SMART CASA LUCE+": { pun: 0.112, spreadLuce: 0.028, spreadGas: 0, arrotondamento: 0.012, costoFisso: 12.00, },
+                "SMART CASA GAS+": { psv: 0.375, spreadLuce: 0, spreadGas: 0.14, arrotondamento: 0.012, costoFisso: 12.00, },
+                "SMART BUSINESS LUCE": { pun: 0.112, spreadLuce: 0.029, spreadGas: 0, arrotondamento: 0.012, costoFisso: 14.50, },
+                "SMART BUSINESS GAS": { psv: 0.375, spreadLuce: 0, spreadGas: 0.12, arrotondamento: 0.012, costoFisso: 14.50, },
+                "SMART BUSINESS LUCE+": { pun: 0.112, spreadLuce: 0.029, spreadGas: 0, arrotondamento: 0.012, costoFisso: 20.00, },
+                "SMART BUSINESS GAS+": { psv: 0.375, spreadLuce: 0, spreadGas: 0.12, arrotondamento: 0.012, costoFisso: 20.00, }
+            },
+            agosto: {
+                "SMART CASA LUCE": { pun: 0.128, spreadLuce: 0.029, spreadGas: 0, arrotondamento: 0.012, costoFisso: 9.50, },
+                "SMART CASA GAS": { psv: 0.43, spreadLuce: 0, spreadGas: 0.13, arrotondamento: 0.012, costoFisso: 9.50, },
+                "NOI2 (70% fisso 0,119 €/kWh, 30% variabile PUN+SPREAD)": { pun: 0.128, spreadLuce: 0.028, prezzoFisso: 0.119, costoFisso: 9.50 },
+                "SMART CASA LUCE+": { pun: 0.128, spreadLuce: 0.028, spreadGas: 0, arrotondamento: 0.012, costoFisso: 12.00, },
+                "SMART CASA GAS+": { psv: 0.43, spreadLuce: 0, spreadGas: 0.14, arrotondamento: 0.012, costoFisso: 12.00, },
+                "SMART BUSINESS LUCE": { pun: 0.128, spreadLuce: 0.029, spreadGas: 0, arrotondamento: 0.012, costoFisso: 14.50, },
+                "SMART BUSINESS GAS": { psv: 0.43, spreadLuce: 0, spreadGas: 0.12, arrotondamento: 0.012, costoFisso: 14.50, },
+                "SMART BUSINESS LUCE+": { pun: 0.128, spreadLuce: 0.029, spreadGas: 0, arrotondamento: 0.012, costoFisso: 20.00, },
+                "SMART BUSINESS GAS+": { psv: 0.43, spreadLuce: 0, spreadGas: 0.12, arrotondamento: 0.012, costoFisso: 20.00, }
+            },
+            settembre: {
+                "SMART CASA LUCE": { pun: 0.117, spreadLuce: 0.029, spreadGas: 0, arrotondamento: 0.012, costoFisso: 9.50, },
+                "SMART CASA GAS": { psv: 0.411, spreadLuce: 0, spreadGas: 0.13, arrotondamento: 0.012, costoFisso: 9.50, },
+                "NOI2 (70% fisso 0,119 €/kWh, 30% variabile PUN+SPREAD)": { pun: 0.117, spreadLuce: 0.028, prezzoFisso: 0.119, costoFisso: 9.50 },
+                "SMART CASA LUCE+": { pun: 0.117, spreadLuce: 0.028, spreadGas: 0, arrotondamento: 0.012, costoFisso: 12.00, },
+                "SMART CASA GAS+": { psv: 0.411, spreadLuce: 0, spreadGas: 0.14, arrotondamento: 0.012, costoFisso: 12.00, },
+                "SMART BUSINESS LUCE": { pun: 0.117, spreadLuce: 0.029, spreadGas: 0, arrotondamento: 0.012, costoFisso: 14.50, },
+                "SMART BUSINESS GAS": { psv: 0.411, spreadLuce: 0, spreadGas: 0.12, arrotondamento: 0.012, costoFisso: 14.50, },
+                "SMART BUSINESS LUCE+": { pun: 0.117, spreadLuce: 0.029, spreadGas: 0, arrotondamento: 0.012, costoFisso: 20.00, },
+                "SMART BUSINESS GAS+": { psv: 0.411, spreadLuce: 0, spreadGas: 0.12, arrotondamento: 0.012, vcostoFisso: 20.00, }
+            },
+            ottobre: {
+                "SMART CASA LUCE": { pun: 0.116, spreadLuce: 0.029, spreadGas: 0, arrotondamento: 0.012, costoFisso: 9.50, },
+                "SMART CASA GAS": { psv: 0.432, spreadLuce: 0, spreadGas: 0.13, arrotondamento: 0.012, costoFisso: 9.50, },
+                "NOI2 (70% fisso 0,119 €/kWh, 30% variabile PUN+SPREAD)": { pun: 0.116, spreadLuce: 0.028, prezzoFisso: 0.119, costoFisso: 9.50 },
+                "SMART CASA LUCE+": { pun: 0.116, spreadLuce: 0.028, spreadGas: 0, arrotondamento: 0.012, costoFisso: 12.00, },
+                "SMART CASA GAS+": { psv: 0.432, spreadLuce: 0, spreadGas: 0.14, arrotondamento: 0.012, costoFisso: 12.00, },
+                "SMART BUSINESS LUCE": { pun: 0.116, spreadLuce: 0.029, spreadGas: 0, arrotondamento: 0.012, costoFisso: 14.50, },
+                "SMART BUSINESS GAS": { psv: 0.432, spreadLuce: 0, spreadGas: 0.12, arrotondamento: 0.012, costoFisso: 14.50, },
+                "SMART BUSINESS LUCE+": { pun: 0.116, spreadLuce: 0.029, spreadGas: 0, arrotondamento: 0.012, costoFisso: 20.00, },
+                "SMART BUSINESS GAS+": { psv: 0.432, spreadLuce: 0, spreadGas: 0.12, arrotondamento: 0.012, costoFisso: 20.00, }
+            },
+        };
+
+         function calcolaCosto() {
+    const mese = document.getElementById("mese").value;
+    const consumoLuce = parseFloat(document.getElementById("consumoLuce").value);
+    const consumoGas = parseFloat(document.getElementById("consumoGas").value || 0); // Per altre offerte
+    const costoAttualeLuce = parseFloat(document.getElementById("costoAttualeLuce").value || 0);
+    const costoAttualeGas = parseFloat(document.getElementById("costoAttualeGas").value || 0);
+
+
+            if (!offertePerMese[mese]) {
+                alert("I dati per il mese selezionato non sono disponibili.");
+                return;
+            }
+
+            const offerte = offertePerMese[mese];
+    const risultatiOfferte = document.getElementById("risultatiOfferte");
+    risultatiOfferte.innerHTML = "";
+
+    for (const [nomeOfferta, valori] of Object.entries(offerte)) {
+        let costoEnergia = 0;
+
+        // Logica specifica per NOI2
+        if (nomeOfferta.includes("NOI2")) {
+            const costoFisso = consumoLuce * 0.7 * valori.prezzoFisso; // 70% fisso
+            const costoVariabile = consumoLuce * 0.3 * (valori.pun + valori.spreadLuce); // 30% variabile
+            costoEnergia = (costoFisso + costoVariabile).toFixed(2);
+        }
+        // Logica generica per altre offerte
+        else if (valori.pun) {
+            costoEnergia = (consumoLuce * (valori.pun + valori.spreadLuce + valori.arrotondamento)).toFixed(2);
+        } else if (valori.psv) {
+            costoEnergia = (consumoGas * (valori.psv + valori.spreadGas)).toFixed(2);
+        }
+
+        const costoFissoMensile = parseFloat(valori.costoFisso).toFixed(2);
+        const costoTotale = (parseFloat(costoEnergia) + parseFloat(costoFissoMensile)).toFixed(2);
+
+        let differenza = 0;
+        if (nomeOfferta.includes("NOI2") || valori.pun) {
+            differenza = (parseFloat(costoTotale) - costoAttualeLuce).toFixed(2);
+        } else if (valori.psv) {
+            differenza = (parseFloat(costoTotale) - costoAttualeGas).toFixed(2);
+        }
+
+        const tipoRisultato = differenza < 0 ? "risparmio" : "costo";
+
+
+        risultatiOfferte.innerHTML += `
+        <div class="offerta ${tipoRisultato}">
+            <h3>${nomeOfferta} (${mese})</h3>
+            <p>Costo Energia: € ${costoEnergia}</p>
+            <p>Costo Fisso: € ${costoFissoMensile}</p>
+            <p><strong>Costo Totale: € ${costoTotale}</strong></p>
+            <p><strong>Risparmio/Differenza: € ${differenza}</strong></p>
+            <button type="button" onclick="stampaOfferta('${nomeOfferta}', '${mese}', '${document.getElementById("nomeCliente").value.trim()}', ${costoEnergia}, ${costoFissoMensile}, ${costoTotale}, ${nomeOfferta.includes('GAS') ? costoAttualeGas : costoAttualeLuce})">
+    Stampa Offerta
+</button>
+            </div>
+                `;
+            }
+
+            document.getElementById("results").style.display = "block";
+        }
+
+        function stampaOfferta(nomeOfferta, mese, nomeCliente, costoEnergia, costoFissoMensile, costoTotale, costoAttuale) {
+    const differenza = (costoTotale - costoAttuale).toFixed(2);
+    const tipoSpesa = nomeOfferta.includes("GAS") ? "Spesa Gas Naturale" : "Spesa Materia Energia";
+    const coloreDifferenza = differenza < 0 ? "green" : "red";
+
+    const printContent = `
+        <div class="printable-area">
+            <h3>Cliente: ${nomeCliente}</h3>
+            <h3>Offerta: ${nomeOfferta} (${mese})</h3>
+            <p>${tipoSpesa}: € ${costoEnergia.toFixed(2)}</p>
+            <p>Costo Fisso: € ${costoFissoMensile.toFixed(2)}</p>
+            <p><strong>Totale: € ${costoTotale.toFixed(2)}</strong></p>
+            <p style="color: ${coloreDifferenza};">
+            <strong>Risparmio/Differenza con l'attuale costo: € ${differenza}</strong>
+            </p>
+        </div>
+    `;
+    const newWindow = window.open("", "_blank");
+    newWindow.document.write(`
+        <html>
+            <head>
+                <title>Preventivo con fornitura A2A</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 20px; font-size: 20px; }
+                    h3 { text-align: center; }
+                    .printable-area { margin: 0; padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
+                    .printable-area p { margin: 5px 0; }
+                </style>
+            </head>
+            <body>${printContent}</body>
+        </html>
+    `);
+    newWindow.document.close();
+    newWindow.print();
+}
+</script>
+</body>
+</html>
